@@ -1,0 +1,350 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Materiały do języka polskiego</title>
+    
+    <!-- PWA -->
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#f8fafc">
+    <link rel="icon" href="https://cdn-icons-png.flaticon.com/512/3389/3389081.png" type="image/png">
+    <link rel="apple-touch-icon" href="https://cdn-icons-png.flaticon.com/512/3389/3389081.png">
+    
+    <!-- Open Graph / Social Media -->
+    <meta property="og:title" content="Materiały do języka polskiego">
+    <meta property="og:description" content="Baza wiedzy, opracowania lektur i repetytorium gramatyczne z języka polskiego.">
+    <meta property="og:type" content="website">
+    <meta property="og:image" content="https://cdn-icons-png.flaticon.com/512/3389/3389081.png">
+    <meta name="description" content="Baza wiedzy, opracowania lektur i repetytorium gramatyczne z języka polskiego.">
+    
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Lora:ital,wght@0,400;0,600;0,700;1,400&display=swap" rel="stylesheet">
+    
+    <script src="https://cdn.tailwindcss.com?plugins=typography"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                        serif: ['Lora', 'serif'],
+                    }
+                }
+            }
+        }
+    </script>
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/dompurify/3.0.6/purify.min.js"></script>
+    
+    <style>
+        /* Animacja wejścia zapobiegająca błędowi ze stopką */
+        .fade-in { animation: fadeIn 0.3s ease-out forwards; }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(8px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .bg-dots {
+            background-color: #f8fafc;
+        }
+        .bg-dots::before {
+            content: '';
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            z-index: -1;
+            background-image: radial-gradient(#cbd5e1 1px, transparent 1px);
+            background-size: 20px 20px;
+            pointer-events: none;
+        }
+        html.dark .bg-dots {
+            background-color: #0f172a;
+        }
+        html.dark .bg-dots::before {
+            background-image: radial-gradient(#334155 1px, transparent 1px);
+        }
+
+        /* Flashcards (fiszki) */
+        details {
+            background: #f1f5f9;
+            border-radius: 1rem;
+            padding: 1rem;
+            margin: 1.5rem 0;
+            border: 1px solid #e2e8f0;
+            transition: all 0.3s;
+        }
+        html.dark details {
+            background: #1e293b;
+            border-color: #334155;
+        }
+        summary {
+            font-weight: 700;
+            cursor: pointer;
+            list-style: none;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            color: #4f46e5;
+        }
+        html.dark summary { color: #818cf8; }
+        summary::-webkit-details-marker { display: none; }
+        summary::after {
+            content: "▼";
+            font-size: 0.8em;
+            transition: transform 0.3s;
+            margin-left: 0.5rem;
+        }
+        details[open] summary::after { transform: rotate(180deg); }
+        details[open] { background: #e0e7ff; border-color: #c7d2fe; }
+        html.dark details[open] { background: #312e81; border-color: #4338ca; }
+        details p { margin-top: 1rem; margin-bottom: 0; }
+
+        /* Pasek postępu czytania - Optymalizacja GPU */
+        #progress-bar-container {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 4px;
+            background: transparent;
+            z-index: 100;
+        }
+        #progress-bar {
+            height: 100%; width: 100%;
+            background: #4f46e5;
+            transform-origin: left;
+            transform: scaleX(0);
+        }
+
+        /* Animacja polubienia */
+        @keyframes heartPulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.3); }
+            100% { transform: scale(1); }
+        }
+        .heart-animate { animation: heartPulse 0.3s ease-out; color: #ef4444 !important; fill: #ef4444; }
+
+        /* Loading skeleton */
+        @keyframes shimmer {
+            0% { background-position: -400px 0; }
+            100% { background-position: 400px 0; }
+        }
+        .skeleton {
+            background: #e2e8f0;
+            background-image: linear-gradient(90deg, #e2e8f0 0px, #f1f5f9 40px, #e2e8f0 80px);
+            background-size: 800px;
+            animation: shimmer 2s infinite linear;
+            border-radius: 0.75rem;
+        }
+        html.dark .skeleton {
+            background: #1e293b;
+            background-image: linear-gradient(90deg, #1e293b 0px, #334155 40px, #1e293b 80px);
+        }
+
+        /* Print styles */
+        @media print {
+            body { background: white !important; }
+            .no-print { display: none !important; }
+            #article-content > div { box-shadow: none !important; border: none !important; padding: 0 !important; }
+        }
+    </style>
+    
+    <!-- Dark mode pre-check -->
+    <script>
+        if (localStorage.theme === 'dark' || (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+            document.documentElement.classList.add('dark')
+        } else {
+            document.documentElement.classList.remove('dark')
+        }
+    </script>
+</head>
+<body class="bg-dots text-slate-800 dark:text-slate-300 font-sans min-h-screen flex flex-col antialiased selection:bg-slate-300 selection:text-slate-900 dark:selection:bg-indigo-500 dark:selection:text-white transition-colors duration-300 overflow-x-hidden w-full max-w-[100vw]">
+    
+    <main class="flex-grow w-full block">
+
+        <!-- ===== WIDOK 1: Ekran Wyboru Poziomu ===== -->
+        <div id="login-view" class="hidden pt-6 pb-8 px-4 sm:px-6 lg:px-8 max-w-4xl mx-auto text-center flex flex-col items-center justify-center min-h-[90vh]">
+            
+            <!-- Górny pasek: Logo i Dark Mode -->
+            <div class="w-full flex justify-between items-start sm:items-center mb-6">
+                <div class="w-10 hidden sm:block"></div> <!-- Pusty element dla balansu na dużych ekranach -->
+                
+                <!-- Logo -->
+                <div class="bg-white p-4 rounded-3xl shadow-md border border-slate-100 w-full max-w-[280px] sm:max-w-none sm:w-80 h-32 sm:h-44 md:w-96 md:h-56 flex items-center justify-center shrink-0 mx-auto sm:mx-0 mt-10 sm:mt-0 relative z-0">
+                    <img src="ikonaglowna.webp" alt="TLW Korepetycje" class="h-full w-auto object-contain rounded-xl">
+                </div>
+
+                <!-- Dark Mode toggle -->
+                <button id="theme-toggle-login" class="p-2.5 bg-white dark:bg-slate-800 rounded-full shadow-sm border border-slate-200 dark:border-slate-700 text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white transition-all focus:outline-none absolute right-4 top-4 sm:relative sm:right-auto sm:top-auto">
+                    <svg class="w-5 h-5 hidden dark:block" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"></path></svg>
+                    <svg class="w-5 h-5 block dark:hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"></path></svg>
+                </button>
+            </div>
+
+            <!-- Miejsce po usuniętych tekstach powitalnych -->
+            
+            <div id="login-error" class="hidden w-full max-w-md bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 p-4 rounded-xl border border-red-200 dark:border-slate-800 mb-6 font-medium"></div>
+
+            <div id="level-selection" class="flex flex-col gap-5 w-full max-w-2xl mx-auto">
+                <!-- Szkoła Podstawowa -->
+                <button data-level="SP" class="level-btn group relative bg-white dark:bg-slate-800 p-6 md:p-8 rounded-3xl shadow-sm hover:shadow-md border border-slate-200 dark:border-slate-700 transition-all text-left overflow-hidden">
+                    <div class="absolute inset-0 bg-emerald-50 dark:bg-emerald-900/20 opacity-0 group-hover:opacity-100 transition-opacity"></div>
+                    <div class="relative z-10">
+                        <span class="inline-block px-3 py-1 bg-emerald-100 dark:bg-emerald-900/50 text-emerald-700 dark:text-emerald-300 text-xs font-bold uppercase tracking-wider rounded-lg mb-4">Szkoła Podstawowa</span>
+                        <h2 class="text-2xl md:text-3xl font-bold text-slate-900 dark:text-white mb-3 flex items-center">
+                            <img src="glowne E8.webp" class="w-16 h-16 md:w-20 md:h-20 mr-4 p-1.5 object-cover shrink-0 rounded-2xl shadow-sm bg-white ring-1 ring-slate-100 dark:ring-slate-700" alt="E8">
+                            Egzamin Ósmoklasisty
+                        </h2>
+                        <p class="text-slate-500 dark:text-slate-400 text-sm md:text-base">Lektury, motywy i zagadnienia do szkoły podstawowej.</p>
+                    </div>
+                </button>
+
+                <!-- Matura Podstawa -->
+                <button data-level="Podstawa" class="level-btn group relative bg-white dark:bg-slate-800 p-6 md:p-8 rounded-3xl shadow-sm hover:shadow-md border border-slate-200 dark:border-slate-700 transition-all text-left overflow-hidden">
+                    <div class="absolute inset-0 bg-indigo-50 dark:bg-indigo-900/20 opacity-0 group-hover:opacity-100 transition-opacity"></div>
+                    <div class="relative z-10">
+                        <span class="inline-block px-3 py-1 bg-indigo-100 dark:bg-indigo-900/50 text-indigo-700 dark:text-indigo-300 text-xs font-bold uppercase tracking-wider rounded-lg mb-4">Szkoła Ponadpodstawowa</span>
+                        <h2 class="text-2xl md:text-3xl font-bold text-slate-900 dark:text-white mb-3 flex items-center">
+                            <img src="glowne PP.webp" class="w-16 h-16 md:w-20 md:h-20 mr-4 p-1.5 object-cover shrink-0 rounded-2xl shadow-sm bg-white ring-1 ring-slate-100 dark:ring-slate-700" alt="PP">
+                            Matura Podstawowa
+                        </h2>
+                        <p class="text-slate-500 dark:text-slate-400 text-sm md:text-base">Baza wiedzy i streszczenia na egzamin podstawowy.</p>
+                    </div>
+                </button>
+                
+                <!-- Matura Rozszerzenie -->
+                <button data-level="Rozszerzenie" class="level-btn group relative bg-white dark:bg-slate-800 p-6 md:p-8 rounded-3xl shadow-sm hover:shadow-md border border-slate-200 dark:border-slate-700 transition-all text-left overflow-hidden">
+                    <div class="absolute inset-0 bg-purple-50 dark:bg-purple-900/20 opacity-0 group-hover:opacity-100 transition-opacity"></div>
+                    <div class="relative z-10">
+                        <span class="inline-block px-3 py-1 bg-purple-100 dark:bg-purple-900/50 text-purple-700 dark:text-purple-300 text-xs font-bold uppercase tracking-wider rounded-lg mb-4">Szkoła Ponadpodstawowa</span>
+                        <h2 class="text-2xl md:text-3xl font-bold text-slate-900 dark:text-white mb-3 flex items-center">
+                            <img src="glowne PR.webp" class="w-16 h-16 md:w-20 md:h-20 mr-4 p-1.5 object-cover shrink-0 rounded-2xl shadow-sm bg-white ring-1 ring-slate-100 dark:ring-slate-700" alt="PR">
+                            Matura Rozszerzona
+                        </h2>
+                        <p class="text-slate-500 dark:text-slate-400 text-sm">Zaawansowane analizy i materiały dla rozszerzenia.</p>
+                    </div>
+                </button>
+            </div>
+
+            <div id="password-form" class="hidden w-full max-w-md bg-white dark:bg-slate-800 p-8 rounded-3xl shadow-sm border border-slate-200 dark:border-slate-700">
+                <h3 id="password-title" class="text-xl font-bold text-slate-900 dark:text-white mb-6">Wpisz hasło</h3>
+                <input type="password" id="password-input" class="w-full px-4 py-3 rounded-xl border border-slate-200 dark:border-slate-600 bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-all mb-4 text-center text-lg" placeholder="••••••••">
+                <div class="flex gap-3">
+                    <button id="cancel-login-btn" class="flex-1 py-3 px-4 bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 rounded-xl font-medium hover:bg-slate-200 dark:hover:bg-slate-600 transition-colors">Wróć</button>
+                    <button id="submit-login-btn" class="flex-1 py-3 px-4 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-medium transition-colors shadow-sm">Wejdź</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- ===== WIDOK 2: Siatka artykułów ===== -->
+        <div id="home-view" class="hidden block">
+            <header class="pt-6 pb-12 px-4 sm:px-6 lg:px-8 max-w-5xl mx-auto text-center relative w-full">
+                <div class="grid grid-cols-3 items-center w-full mb-6 relative z-10">
+                    <div class="flex justify-start">
+                        <button id="back-to-levels-btn" class="inline-flex items-center text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white transition-colors font-medium text-xs sm:text-base">
+                            <svg class="mr-1.5 w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path></svg>
+                            <span>Zmień poziom</span>
+                        </button>
+                    </div>
+
+                    <div class="flex justify-center">
+                        <button id="theme-toggle-home" class="p-2 sm:p-2.5 bg-white dark:bg-slate-800 rounded-full shadow-sm border border-slate-200 dark:border-slate-700 text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white transition-all focus:outline-none">
+                            <svg class="w-4 h-4 sm:w-5 sm:h-5 hidden dark:block" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"></path></svg>
+                            <svg class="w-4 h-4 sm:w-5 sm:h-5 block dark:hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"></path></svg>
+                        </button>
+                    </div>
+
+                    <div class="flex justify-end">
+                        <button id="logout-btn" class="inline-flex items-center text-red-500 hover:text-red-600 dark:text-red-400 dark:hover:text-red-300 transition-colors font-medium text-xs sm:text-base">
+                            <svg class="mr-1.5 w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path></svg>
+                            <span>Wyloguj</span>
+                        </button>
+                    </div>
+                </div>
+                
+                <h1 id="hero-title" class="text-4xl md:text-5xl lg:text-6xl font-bold font-serif text-slate-900 dark:text-slate-100 tracking-tight leading-tight mt-2">
+                    Materiały do języka polskiego
+                </h1>
+                <p id="hero-subtitle" class="mt-6 text-lg md:text-xl text-slate-600 dark:text-slate-400 max-w-2xl mx-auto leading-relaxed">
+                    Baza wiedzy, opracowania lektur i repetytorium.
+                </p>
+                
+                <div class="mt-12 max-w-xl mx-auto relative group w-full">
+                    <div class="absolute inset-y-0 left-0 pl-5 flex items-center pointer-events-none">
+                        <svg class="h-5 w-5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+                    </div>
+                    <input type="text" id="search-input" class="block w-full pl-12 pr-4 min-h-[56px] rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm focus:border-indigo-400 dark:focus:border-indigo-500 focus:ring-4 focus:ring-indigo-100 dark:focus:ring-indigo-900/30 sm:text-lg text-slate-900 dark:text-slate-100 bg-white dark:bg-slate-800 transition-all outline-none" placeholder="Szukaj notatki...">
+                </div>
+            </header>
+
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-20 w-full">
+                <div class="mb-10 w-full flex flex-col items-center">
+                    <nav id="category-tabs" class="flex flex-wrap justify-center gap-2 md:gap-3 w-full" aria-label="Tabs"></nav>
+                    <nav id="subcategory-tabs" class="flex flex-wrap justify-center gap-2 mt-4 w-full hidden" aria-label="Subtabs"></nav>
+                </div>
+                <div id="posts-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 w-full"></div>
+                <div id="no-results" class="hidden text-center py-20 w-full">
+                    <svg class="w-16 h-16 mx-auto text-slate-300 dark:text-slate-600 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+                    <p class="text-slate-500 dark:text-slate-400 text-lg font-medium">Brak wyników do wyświetlenia.</p>
+                    <p class="text-slate-400 dark:text-slate-500 text-sm mt-1">Spróbuj zmienić kategorię lub wpisać inne hasło.</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- ===== WIDOK 3: Artykuł ===== -->
+        <div id="article-view" class="hidden relative pb-20 w-full block">
+            <div id="progress-bar-container" class="no-print"><div id="progress-bar"></div></div>
+            <div class="sticky top-0 z-50 bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border-b border-slate-200 dark:border-slate-800 shadow-sm transition-colors duration-300 no-print">
+                <div class="max-w-4xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
+                    <button id="back-btn" class="inline-flex items-center text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white font-medium min-h-[44px] px-2 transition-colors focus:outline-none relative z-10">
+                        <svg class="mr-1 sm:mr-2 w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path></svg>
+                        <span class="hidden sm:inline">Wróć</span>
+                    </button>
+
+                    <div class="flex items-center gap-1 sm:gap-2 relative z-10">
+                        <!-- Kontrola czcionki -->
+                        <button id="font-minus-btn" class="p-2 font-bold bg-transparent text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white transition-colors focus:outline-none rounded-full hover:bg-slate-100 dark:hover:bg-slate-800">A-</button>
+                        <button id="font-plus-btn" class="p-2 font-bold bg-transparent text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white transition-colors focus:outline-none rounded-full hover:bg-slate-100 dark:hover:bg-slate-800">A+</button>
+                        
+                        <!-- Przycisk Drukuj -->
+                        <button id="print-btn" class="p-2 bg-transparent text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white transition-colors focus:outline-none min-h-[44px] min-w-[44px] flex items-center justify-center rounded-full hover:bg-slate-100 dark:hover:bg-slate-800">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"></path></svg>
+                        </button>
+                        <!-- Dark Mode -->
+                        <button id="theme-toggle-article" class="p-2 bg-transparent text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white transition-colors focus:outline-none min-h-[44px] min-w-[44px] flex items-center justify-center rounded-full hover:bg-slate-100 dark:hover:bg-slate-800">
+                            <svg class="w-5 h-5 hidden dark:block" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"></path></svg>
+                            <svg class="w-5 h-5 block dark:hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"></path></svg>
+                        </button>
+                    </div>
+                </div>
+            </div>
+            <div id="article-content"></div>
+        </div>
+
+        <!-- ===== WIDOK 4: Strona 404 ===== -->
+        <div id="not-found-view" class="hidden pt-20 pb-16 px-4 text-center flex-col items-center justify-center min-h-[60vh]">
+            <svg class="w-24 h-24 text-slate-300 dark:text-slate-600 mb-6 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+            <h2 class="text-3xl font-bold font-serif text-slate-900 dark:text-white mb-3">Nie znaleziono strony</h2>
+            <p class="text-slate-500 dark:text-slate-400 mb-8">Strona, której szukasz, nie istnieje lub została przeniesiona.</p>
+            <a href="#/" class="inline-flex items-center px-6 py-3 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-medium transition-colors shadow-sm mx-auto">
+                <svg class="mr-2 w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-4 0h4"></path></svg>
+                Wróć na stronę główną
+            </a>
+        </div>
+
+    </main>
+
+    <footer class="bg-white dark:bg-slate-900 border-t border-slate-200 dark:border-slate-800 mt-auto py-8 transition-colors duration-300 no-print">
+        <p class="text-center text-slate-500 dark:text-slate-400 text-sm font-medium">&copy; 2026 Nauczyciel Języka Polskiego.</p>
+    </footer>
+
+    <script src="app.js?v=2"></script>
+    <script>
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('/sw.js');
+            });
+        }
+    </script>
+</body>
+</html>

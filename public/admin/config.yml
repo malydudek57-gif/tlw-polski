@@ -1,0 +1,85 @@
+backend:
+  name: github
+  repo: malydudek57-gif/tlw-polski
+  branch: main
+
+media_folder: public/images
+public_folder: /images
+
+media_libraries:
+  all:
+    transformations:
+      raster_image:
+        format: webp
+        quality: 85
+        width: 1920
+
+collections:
+  - name: ustawienia
+    label: Ustawienia Strony (Hasła)
+    files:
+      - name: hasla
+        label: Hasła dostępu
+        file: public/data/settings.json
+        fields:
+          - { label: 'Hasło - Szkoła Podstawowa', name: password_sp, widget: string, required: true }
+          - { label: 'Hasło - Matura Podstawowa', name: password_podstawa, widget: string, required: true }
+          - { label: 'Hasło - Matura Rozszerzona', name: password_rozszerzenie, widget: string, required: true }
+
+  - name: kategorie
+    label: Kategorie Główne
+    folder: public/data/kategorie
+    create: true
+    extension: json
+    format: json
+    fields:
+      - { label: 'Nazwa Kategorii', name: title, widget: string }
+
+  - name: podkategorie
+    label: Podkategorie / Tagi
+    folder: public/data/podkategorie
+    create: true
+    extension: json
+    format: json
+    fields:
+      - { label: 'Nazwa Taga', name: title, widget: string }
+      - { label: 'Kolor Etykiety', name: color, widget: select, options: [indigo, emerald, red, amber, sky, fuchsia, slate], default: indigo }
+
+  - name: notatki_sp
+    label: Notatki - Szkoła Podstawowa
+    folder: public/data/notatki_sp
+    create: true
+    extension: json
+    format: json
+    fields:
+      - { label: 'Tytuł', name: title, widget: string }
+      - { label: 'Kategoria Główna', name: category, widget: relation, collection: kategorie, search_fields: [title], value_field: title, display_fields: [title], required: true }
+      - { label: 'Tagi / Podkategorie (opcjonalnie)', name: subcategory, widget: relation, collection: podkategorie, search_fields: [title], value_field: title, display_fields: [title], multiple: true, required: false }
+      - { label: 'Miniaturka', name: thumbnail, widget: image, required: false }
+      - { label: 'Treść', name: content, widget: markdown }
+
+  - name: notatki_podstawa
+    label: Notatki - Matura Podstawa
+    folder: public/data/notatki_podstawa
+    create: true
+    extension: json
+    format: json
+    fields:
+      - { label: 'Tytuł', name: title, widget: string }
+      - { label: 'Kategoria Główna', name: category, widget: relation, collection: kategorie, search_fields: [title], value_field: title, display_fields: [title], required: true }
+      - { label: 'Tagi / Podkategorie (opcjonalnie)', name: subcategory, widget: relation, collection: podkategorie, search_fields: [title], value_field: title, display_fields: [title], multiple: true, required: false }
+      - { label: 'Miniaturka', name: thumbnail, widget: image, required: false }
+      - { label: 'Treść', name: content, widget: markdown }
+
+  - name: notatki_rozszerzenie
+    label: Notatki - Matura Rozszerzenie
+    folder: public/data/notatki_rozszerzenie
+    create: true
+    extension: json
+    format: json
+    fields:
+      - { label: 'Tytuł', name: title, widget: string }
+      - { label: 'Kategoria Główna', name: category, widget: relation, collection: kategorie, search_fields: [title], value_field: title, display_fields: [title], required: true }
+      - { label: 'Tagi / Podkategorie (opcjonalnie)', name: subcategory, widget: relation, collection: podkategorie, search_fields: [title], value_field: title, display_fields: [title], multiple: true, required: false }
+      - { label: 'Miniaturka', name: thumbnail, widget: image, required: false }
+      - { label: 'Treść', name: content, widget: markdown }
