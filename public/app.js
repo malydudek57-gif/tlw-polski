@@ -25,6 +25,16 @@ document.addEventListener("DOMContentLoaded", () => {
     // --- KONFIGURACJA REPOZYTORIUM GITHUB ---
     const GITHUB_REPO = 'malydudek57-gif/tlw-polski';
 
+    // Przekształca względne ścieżki CMS (/images/...) na bezpośrednie linki do surowych plików z GitHuba
+    function resolveMediaUrl(url) {
+        if (!url) return '';
+        if (url.startsWith('http://') || url.startsWith('https://') || url.startsWith('data:')) {
+            return url;
+        }
+        const clean = url.startsWith('/') ? url : '/' + url;
+        return `https://raw.githubusercontent.com/${GITHUB_REPO}/main/public${clean}`;
+    }
+
     let allPosts = [];
     let activeCategory = 'Wszystkie';
     let activeSubcategories = [];
@@ -597,7 +607,7 @@ document.addEventListener("DOMContentLoaded", () => {
             card.dataset.search = (post.title + ' ' + (post.content || '')).toLowerCase();
             card.className = 'group bg-white dark:bg-slate-900 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-800 transition-all flex flex-col overflow-hidden hover:shadow-md dark:hover:border-slate-700 relative';
 
-            const img = post.thumbnail || 'https://images.unsplash.com/photo-1456953180671-730de08edaa7?auto=format&fit=crop&q=80&w=600&h=400';
+            const img = post.thumbnail ? resolveMediaUrl(post.thumbnail) : 'https://images.unsplash.com/photo-1456953180671-730de08edaa7?auto=format&fit=crop&q=80&w=600&h=400';
             let plain = (post.content || '').replace(/(\*|_|#|-|\d\.)/g, '').replace(/\n/g, ' ').trim();
             const excerpt = plain.length > 100 ? plain.substring(0, 100) + '...' : plain;
 
@@ -613,7 +623,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
             card.innerHTML = `
                 <div class="h-48 overflow-hidden border-b border-slate-100 dark:border-slate-800 relative cursor-pointer" onclick="window.location.hash = '#/artykul/${currentLevel}/${post.slug}'">
-                    <img src="${img}" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" loading="lazy" alt="${post.title}">
+                    <img src="${img}" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" loading="lazy" alt="${post.title}" onerror="this.src='https://images.unsplash.com/photo-1456953180671-730de08edaa7?auto=format&fit=crop&q=80&w=600&h=400'">
                 </div>
                 <button class="absolute top-3 right-3 p-2 bg-black/20 hover:bg-black/40 backdrop-blur-sm rounded-full transition-colors z-10 fav-grid-btn" data-slug="${post.slug}">
                     <svg class="w-5 h-5 ${heartColor} transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"></path></svg>
@@ -669,12 +679,18 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     function renderArticle(post) {
-        const img = post.thumbnail || 'https://images.unsplash.com/photo-1456953180671-730de08edaa7?auto=format&fit=crop&q=80&w=600&h=400';
+        const img = post.thumbnail ? resolveMediaUrl(post.thumbnail) : '';
         const cat = post.category || 'Inne';
         
+        // Rozwiązanie ścieżek obrazków z CMS (/images/...) w treści notatki markdown
+        let rawContent = post.content || '';
+        rawContent = rawContent.replace(/!\[(.*?)\]\(\s*(\/images\/[^\s)]+)\s*\)/g, (match, alt, src) => {
+            return `![${alt}](${resolveMediaUrl(src)})`;
+        });
+
         // Generowanie HTML
-        const html = DOMPurify.sanitize(marked.parse(post.content || ''));
-        const words = (post.content || '').trim().split(/\s+/).length;
+        const html = DOMPurify.sanitize(marked.parse(rawContent));
+        const words = rawContent.trim().split(/\s+/).length;
         const time = `${Math.ceil(words / 200)} min czytania`;
 
         const isFav = favorites.includes(post.slug);
@@ -716,6 +732,12 @@ document.addEventListener("DOMContentLoaded", () => {
         
         let levelIcon = '';
         
+        const thumbnailHtml = img ? `
+            <figure class="mb-12 rounded-2xl overflow-hidden border border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/50 no-print">
+                <img src="${img}" alt="${post.title}" class="w-full h-auto max-h-[500px] object-cover mx-auto block" onerror="this.parentElement.style.display='none'">
+            </figure>
+        ` : '';
+
         articleContent.innerHTML = `
             <div class="max-w-4xl mx-auto bg-white dark:bg-slate-900 p-8 sm:p-12 md:p-16 rounded-[2rem] shadow-sm dark:shadow-none border border-slate-200 dark:border-slate-800 mt-6 sm:mt-10 mb-20 relative z-10 transition-colors duration-300">
                 <header class="mb-10 text-center relative">
@@ -736,9 +758,7 @@ document.addEventListener("DOMContentLoaded", () => {
                         ${time}
                     </div>
                 </header>
-                <figure class="mb-12 rounded-2xl overflow-hidden border border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/50 no-print">
-                    <img src="${img}" alt="${post.title}" class="w-full h-auto max-h-[500px] object-cover mx-auto block">
-                </figure>
+                ${thumbnailHtml}
                 
                 ${tocHtml}
                 
