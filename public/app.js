@@ -23,7 +23,7 @@ document.addEventListener("DOMContentLoaded", () => {
     const printBtn = document.getElementById("print-btn");
 
     // --- KONFIGURACJA REPOZYTORIUM GITHUB ---
-    const GITHUB_REPO = 'malydudek57-gif/tlw-polski';
+    const GITHUB_REPO = 'sobczykmichalservers/tlw-polski';
 
     // Przekształca względne ścieżki CMS (/images/...) na bezpośrednie linki do surowych plików z GitHuba
     function resolveMediaUrl(url) {

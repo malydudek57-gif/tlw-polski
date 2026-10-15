@@ -1,6 +1,6 @@
 backend:
   name: github
-  repo: malydudek57-gif/tlw-polski
+  repo: sobczykmichalservers/tlw-polski
   branch: main
 
 media_folder: public/images
